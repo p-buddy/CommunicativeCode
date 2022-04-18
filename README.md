@@ -11,7 +11,7 @@ const bunny = {
   hop: () => {...}
 }
 
-bunny.hop();
+bunny.hop(); // from this
 ```
 
 They would read (and write):
@@ -21,7 +21,7 @@ const bunny = {
   hop: () => {...}
 }
 
-ask(bunny).to("hop");
+ask(bunny).to("hop"); // to this
 ```
 
 Not convinced that's better? Well, fair enough. After all, it is longer, which we all don't like. 
