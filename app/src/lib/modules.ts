@@ -4,6 +4,12 @@ export const enum EModuleType {
   SourceMap
 }
 
+const allModuleTypes: EModuleType[] = [
+  EModuleType.Javascript,
+  EModuleType.Typescript,
+  EModuleType.SourceMap
+];
+
 export type TModule = {
   path: string;
   code: string;
@@ -18,12 +24,10 @@ const fileEndings: Record<EModuleType, string> = {
   [EModuleType.SourceMap]: ".js.map"
 }
 
-const matchesType = (file: string, type: EModuleType): boolean => file.endsWith(fileEndings[type]);
-
 const getFileType = (file: string): EModuleType => {
-  if (matchesType(file, EModuleType.Typescript)) return EModuleType.Typescript;
-  if (matchesType(file, EModuleType.Javascript)) return EModuleType.Javascript;
-  if (matchesType(file, EModuleType.SourceMap)) return EModuleType.SourceMap;
+  for (const type of allModuleTypes) {
+    if (file.endsWith(fileEndings[type])) return type;
+  }
   throw new Error(`Unknown file type: ${file}`);
 }
 
@@ -41,19 +45,20 @@ export type TModuleMap = { [key: TModuleName]: TCompiledModule };
 
 const moduleMap: TModuleMap = {};
 
-const getFilesToInclude = async (): Promise<string[]> => {
-  const includeFileLocation = 'include.txt';
+const modulesByType: Record<EModuleType, TModule[]> = {
+  [EModuleType.Typescript]: [],
+  [EModuleType.Javascript]: [],
+  [EModuleType.SourceMap]: [],
+}
 
-  const splitOnNewLines = (text: string): string[] => text.split(/\r?\n/);
-  const isNotWhitespace = (text: string): boolean => text.trim() !== '';
-  const filterOutWhiteSpace = (strings: string[]): string[] => strings.filter(isNotWhitespace)
-  const isRelevant = (file: string) => file.endsWith(fileEndings[EModuleType.Javascript]) ||
-    file.endsWith(fileEndings[EModuleType.Typescript]) ||
-    file.endsWith(fileEndings[EModuleType.SourceMap]);
-  const filterOutIrrelevant = (strings: string[]): string[] => strings.filter(isRelevant)
+const splitOnNewLines = (text: string): string[] => text.split(/\r?\n/);
+const isNotWhitespace = (text: string): boolean => text.trim() !== '';
+const filterOutWhiteSpace = (strings: string[]): string[] => strings.filter(isNotWhitespace)
 
-
-  return await fetch(includeFileLocation, {
+let availableFiles: string[];
+const getAvailableFiles = async () => {
+  if (availableFiles) return availableFiles;
+  availableFiles = await fetch(includeFileLocation, {
     method: 'GET',
     headers: {
       'Content-Type': 'text/plain'
@@ -61,8 +66,20 @@ const getFilesToInclude = async (): Promise<string[]> => {
   })
     .then((r) => r.text())
     .then(splitOnNewLines)
-    .then(filterOutWhiteSpace)
-    .then(filterOutIrrelevant);
+    .then(filterOutWhiteSpace);
+  return availableFiles;
+}
+
+const codeLocation = 'base/';
+const exampleIdentifier = "example_";
+const isSupportedFile = (file): boolean => allModuleTypes.some(type => file.endsWith(fileEndings[type]));
+const isExampleFile = (file: string) => file.includes(exampleIdentifier);
+const includeFileLocation = 'include.txt';
+
+// for examples: !isExampleFile(file) && file.endsWith(fileEndings[EModuleType.Typescript])
+const getMatchingIncludedFiles = async (match: (file: string) => boolean): Promise<string[]> => {
+  const filterOutIrrelevant = (strings: string[]): string[] => strings.filter(match);
+  return await getAvailableFiles().then(filterOutIrrelevant);
 }
 
 const getCodeContent = async (location: string): Promise<string> => {
@@ -74,35 +91,35 @@ const getCodeContent = async (location: string): Promise<string> => {
   }).then((r) => r.text());
 };
 
-export const getModules = async (): Promise<TModuleMap> => {
+export const getRequiredModules = async (): Promise<TModuleMap> => {
   if (Object.keys(moduleMap).length > 0) return moduleMap;
 
-  const files = await getFilesToInclude();
+  const matchRequiredModule = (file: string) => !isExampleFile(file) && isSupportedFile(file);
+  const files = await getMatchingIncludedFiles(matchRequiredModule);
 
-  const rootDir = 'base/';
-  const modules: TModule[] = await Promise.all(
-    files.map((path) => getCodeContent(path).then((code) => ({
-      path: path.replace(rootDir, ''),
-      code,
-      isEntry: false,
-    }))
-    )
-  );
+  const getContentAsModule = async (path: string): Promise<TModule> => getCodeContent(path).then((code) => ({
+    path: path.replace(codeLocation, ''),
+    isEntry: false,
+    code,
+  }));
+  const modules: TModule[] = await Promise.all(files.map(getContentAsModule));
 
   modules.forEach(module => {
     const type: EModuleType = getFileType(module.path);
     const name: TModuleName = getModuleName(module.path, type);
-    name in moduleMap ? moduleMap[name][type] = module : moduleMap[name] = { ...emptyCompiledModule, [type]: module };
+    name in moduleMap ?
+      moduleMap[name][type] = module :
+      moduleMap[name] = { ...emptyCompiledModule, [type]: module };
   });
+
+  for (const key in moduleMap) {
+    allModuleTypes.forEach(type => modulesByType[type].push(moduleMap[key][type]));
+  }
 
   return moduleMap;
 }
 
-export const getModulesOfType = async (type: EModuleType): Promise<TModule[]> => {
-  const map = await getModules();
-  const modules = [];
-  for (const key in map) {
-    if (map[key][type] !== undefined) modules.push(map[key][type]);
-  }
-  return modules;
+export const getRequiredModulesOfType = async (type: EModuleType): Promise<TModule[]> => {
+  await getRequiredModules();
+  return modulesByType[type];
 }

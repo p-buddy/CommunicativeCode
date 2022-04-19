@@ -1,5 +1,5 @@
-import ask from "../base/ask"
-import { after, when } from "../base/events";
+import ask from "./ask"
+import { after, when } from "./events";
 
 const synth = {
   audio: new Audio(),

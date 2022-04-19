@@ -1,35 +1,17 @@
 import type rollup from 'rollup';
 import type { TModule } from '$lib/modules';
-import { waitForCondition } from './utils';
+import { loadExternalSrcipt } from '$lib/jsUtils';
 
 export type TRollup = typeof rollup;
 let bundler: TRollup;
 
 export async function loadRollup(): Promise<TRollup> {
   if (bundler) return bundler;
-
-  const url = 'https://unpkg.com/rollup/dist/rollup.browser.js';
-  const script = document.createElement('script');
-  script.src = url;
-  let loaded = false;
-
-  script.onload = () => {
-    loaded = true;
-    bundler = (window as unknown as { rollup: TRollup }).rollup;
-  };
-
-  script.onerror = () => {
-    loaded = true;
-    throw new Error("Could not load rollup");
-  };
-
-  document.querySelector('head').appendChild(script);
-
-  await waitForCondition(() => loaded === true);
+  bundler = await loadExternalSrcipt('https://unpkg.com/rollup/dist/rollup.browser.js', 'rollup');
   return bundler;
 }
 
-export const bundle = async (modules: TModule[]) => {
+export const bundle = async (modules: TModule[]): Promise<string> => {
   const moduleById: { [k: string]: TModule } = {};
 
   modules.forEach((module) => {
@@ -50,7 +32,6 @@ export const bundle = async (modules: TModule[]) => {
 
           resolved += '.js';
           if (resolved in moduleById) return resolved;
-
           throw new Error(`Could not resolve '${importee}' (${resolved}) from '${importer}'`);
         },
         load: function (id) {
@@ -71,7 +52,11 @@ export const bundle = async (modules: TModule[]) => {
     }
   };
 
+  const sourceMapUrlPrefix = "//# sourceMappingURL=";
+
   return await loadRollup()
-    .then(roll => roll.rollup(inputOptions))
-    .then(build => build.generate({}));
+    .then(roller => roller.rollup(inputOptions))
+    .then(build => build.generate({ sourcemap: 'inline' }))
+    .then(output => output.output[0])
+    .then(chunk => [chunk.code, `${sourceMapUrlPrefix}${chunk.map.toUrl()}`].join("\n"));
 };

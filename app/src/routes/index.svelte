@@ -34,42 +34,53 @@ after(bunny, "hop").finally(() => {
 	console.log("yessss");
 });
 
+self.postMessage("hi");
+
 ask(${objectName}).to(\"${functionName}\");`;
 </script>
 
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { compileEditorToJs, createEditor } from '$lib/monaco';
-	import type { TEditorHandle } from '$lib/monaco';
-	import { EModuleType, getModulesOfType } from '$lib/modules';
+	import { EModuleType, getRequiredModulesOfType } from '$lib/modules';
 	import { bundle, loadRollup } from '$lib/rollup';
+	import type { editor } from 'monaco-editor';
+	import { convertCodeToUrl } from '$lib/jsUtils';
+	import type { TSvelteCssClass } from '$lib/svelteUtils';
 
-	let editorHandle: TEditorHandle;
-	let tsModules;
-	let jsModules;
-	let divEl: HTMLDivElement = null;
+	const editorContainer: TSvelteCssClass = true;
 
-	let display: string;
+	let editor: editor.IStandaloneCodeEditor;
+	let editorContainerDiv: HTMLDivElement = null;
 
 	onMount(async () => {
-		await loadRollup();
-		[tsModules, jsModules] = await Promise.all([
-			await getModulesOfType(EModuleType.Typescript),
-			await getModulesOfType(EModuleType.Javascript)
+		[, editor] = await Promise.all([
+			loadRollup(),
+			createEditor(
+				self,
+				starterCode,
+				editorContainerDiv,
+				await getRequiredModulesOfType(EModuleType.Typescript)
+			)
 		]);
-		editorHandle = await createEditor(self, starterCode, divEl, tsModules);
 	});
 
-	const emit = async () => {
-		const userJs = await compileEditorToJs();
-		const r = await bundle([userJs, ...jsModules]);
-		display = r.output[0].code;
-		eval(display);
+	const execute = async () => {
+		const [userJs, baseModules] = await Promise.all([
+			compileEditorToJs(),
+			getRequiredModulesOfType(EModuleType.Javascript)
+		]);
+		const bundledCode = await bundle([userJs, ...baseModules]);
+		const { url, revoke } = convertCodeToUrl(bundledCode);
+		const worker = new Worker(url);
+		worker.onerror = (e) => console.log(e);
+		revoke();
 	};
 </script>
 
-<div bind:this={divEl} style="height: 50vh; width: 50vw;" />
+<div bind:this={editorContainerDiv} class:editorContainer style="height: 50vh; width: 50vw;" />
 
-<button on:click={emit}>Emit</button>
+<button on:click={execute}>Execute</button>
 
-{display}
+<style>
+</style>

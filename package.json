@@ -1,0 +1,27 @@
+{
+  "name": "t-b-d",
+  "version": "0.0.1",
+  "scripts": {
+    "child:script": "npm run --prefix $npm_config_dir",
+    "app": "npm run child:script --dir=./app/",
+    "compile:tsc": "./app/node_modules/.bin/tsc",
+    "collect:base:files": "rm app/static/include.txt && find base -type f >> app/static/include.txt",
+    "compile:base:files": "npm run compile:tsc -- --project base/tsconfig.json",
+    "prepare:base": "npm run compile:base:files && npm run collect:base:files",
+    "dev": "npm run prepare:base && npm run app dev",
+    "build": "npm run server build && npm run client build",
+    "cleanup": "npm run --prefix ./client/ cleanup && npm run --prefix ./server/ cleanup && rm -rf ./build/ ",
+    "setup": "npm install && npm run tests setup && npm run client setup && npm run server setup",
+    "build:base:old": "npm run compile:tsc -- -out app/static/code/lib.ts -lib es2020 --module amd --declaration $(find base -type f | tr '\n' ',\n\t')"
+  },
+  "devDependencies": {
+    "npm": "^8.3.1",
+    "nodemon": "^2.0.15",
+    "@types/socket.io-client": "^3.0.0",
+    "socket.io-client": "^4.4.1",
+    "socket.io": "^4.4.1",
+    "@types/socket.io": "^3.0.0"
+  },
+  "type": "module",
+  "module": "es2020"
+}
