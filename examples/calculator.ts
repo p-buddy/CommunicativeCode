@@ -1,5 +1,5 @@
-import ask from "../ask";
-import { after } from "../events";
+import ask from "../base/ask";
+import { after } from "../base/events";
 
 type TCalculator = {
   manufactuer: string;

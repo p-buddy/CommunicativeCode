@@ -1,4 +1,4 @@
-import ask from "../ask";
+import ask from "../base/ask";
 
 const bunny = {
   position: 0,

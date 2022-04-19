@@ -24,7 +24,7 @@ const bunny = {
 ask(bunny).to("hop"); // to this
 ```
 
-Not convinced that's better? Well, fair enough. After all, it is longer, which we all don't like. 
+Not convinced that's better? Well, fair enough. After all, it is longer, which we as programmers don't like. (NOTE: It is type-safe though, thanks to the joys of Typescript. Getting that working was very satisfying!)
 
 But I think this pattern comes alive when we are interacting with many objects. Like below:
 
@@ -39,3 +39,5 @@ Like consider the following:
 ```js
 // work in progress
 ```
+
+Overall, I don't think this strategy encourages *good* behavior. The code is pretty readable, but not maintainable, since 
