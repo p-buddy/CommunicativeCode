@@ -1,6 +1,5 @@
 base/ask.js
 base/events.js
-base/SubscriptionMechanism.js.map
 base/types/memberTypes.ts
 base/types/utilityTypes.js
 base/types/IEnqueuedInstructable.ts
@@ -11,8 +10,10 @@ base/types/IInstructable.js
 base/types/IEnqueuedInstructable.js
 base/example_bunny.ts
 base/SubscriptionMechanism.ts
+base/audio.ts
 base/example_synth.ts
 base/SubscriptionMechanism.js
+base/audio.js
 base/.gitignore
 base/events.ts
 base/ask.ts

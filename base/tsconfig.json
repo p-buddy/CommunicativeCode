@@ -32,7 +32,7 @@
   ],
   "exclude": [
     "node_modules/**/*",
-    "tsconfig.json",
-    "example_*.*"
+    "./tsconfig.json",
+    "./example_*.*"
   ]
 }

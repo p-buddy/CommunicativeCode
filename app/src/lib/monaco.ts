@@ -2,8 +2,6 @@ import type monaco from 'monaco-editor';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import type { TModule } from '$lib/modules';
-import * as diff from 'diff';
-import { mode } from '$app/env';
 
 export type TMonaco = typeof monaco;
 export type TContext = Window & typeof globalThis;
@@ -57,7 +55,7 @@ export const createEditor = async (context: TContext, starterCode: string, conta
     filename ? Monaco.Uri.parse(filename) : Monaco.Uri.parse(fullFileName)
   );
 
-  return Monaco.editor.create(containerDiv, { model });
+  return Monaco.editor.create(containerDiv, { model, scrollBeyondLastLine: false, theme: 'vs-dark' });
 }
 
 const getJsFromRaw = async (raw: string): Promise<string> => {

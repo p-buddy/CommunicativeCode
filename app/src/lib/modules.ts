@@ -76,7 +76,6 @@ const isSupportedFile = (file): boolean => allModuleTypes.some(type => file.ends
 const isExampleFile = (file: string) => file.includes(exampleIdentifier);
 const includeFileLocation = 'include.txt';
 
-// for examples: !isExampleFile(file) && file.endsWith(fileEndings[EModuleType.Typescript])
 const getMatchingIncludedFiles = async (match: (file: string) => boolean): Promise<string[]> => {
   const filterOutIrrelevant = (strings: string[]): string[] => strings.filter(match);
   return await getAvailableFiles().then(filterOutIrrelevant);
@@ -91,18 +90,30 @@ const getCodeContent = async (location: string): Promise<string> => {
   }).then((r) => r.text());
 };
 
+const getContentAsModule = async (path: string): Promise<TModule> => getCodeContent(path).then((code) => ({
+  path: path.replace(codeLocation, ''),
+  isEntry: false,
+  code,
+}));
+
+const retrieveModules = async (files: string[]): Promise<TModule[]> => Promise.all(files.map(getContentAsModule));
+
+export const getExampleModules = async (): Promise<TModule[]> => {
+  const matchExampleModule = (file: string) => isExampleFile(file) && file.endsWith(fileEndings[EModuleType.Typescript])
+  const files = await getMatchingIncludedFiles(matchExampleModule);
+  const removeExampleIdentifier = (mods: TModule[]) => mods.map(mod => ({
+    ...mod,
+    path: mod.path.replace(exampleIdentifier, '')
+  }));
+  return retrieveModules(files).then(removeExampleIdentifier);
+}
+
 export const getRequiredModules = async (): Promise<TModuleMap> => {
   if (Object.keys(moduleMap).length > 0) return moduleMap;
 
   const matchRequiredModule = (file: string) => !isExampleFile(file) && isSupportedFile(file);
   const files = await getMatchingIncludedFiles(matchRequiredModule);
-
-  const getContentAsModule = async (path: string): Promise<TModule> => getCodeContent(path).then((code) => ({
-    path: path.replace(codeLocation, ''),
-    isEntry: false,
-    code,
-  }));
-  const modules: TModule[] = await Promise.all(files.map(getContentAsModule));
+  const modules: TModule[] = await retrieveModules(files);
 
   modules.forEach(module => {
     const type: EModuleType = getFileType(module.path);

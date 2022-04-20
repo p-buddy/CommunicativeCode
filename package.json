@@ -14,14 +14,7 @@
     "setup": "npm install && npm run tests setup && npm run client setup && npm run server setup",
     "build:base:old": "npm run compile:tsc -- -out app/static/code/lib.ts -lib es2020 --module amd --declaration $(find base -type f | tr '\n' ',\n\t')"
   },
-  "devDependencies": {
-    "npm": "^8.3.1",
-    "nodemon": "^2.0.15",
-    "@types/socket.io-client": "^3.0.0",
-    "socket.io-client": "^4.4.1",
-    "socket.io": "^4.4.1",
-    "@types/socket.io": "^3.0.0"
-  },
+  "devDependencies": {},
   "type": "module",
   "module": "es2020"
 }
