@@ -24,16 +24,17 @@ type TMessage<TEvent extends number, TCommunication extends ECommunicationType, 
 }
 
 type TDispatch<TEvent extends number, TData, TResponse = void> = TMessage<TEvent, TDispatcher, TData, TResponse>;
-type TDispatchWithResponse<TEvent extends number, TData, TResponse = void> = RequireKey<TDispatch<TEvent, TData, TResponse>, "onResponse">;
-type TResponse<TDispatched extends TDispatchWithResponse<any, any, any>> = RequireKey<TMessage<TDispatched['event'], TResponder, Parameters<TDispatched['onResponse']>[0]>, "responseId">;
+type TDispatchForResponse<TEvent extends number, TData, TResponse> = RequireKey<TDispatch<TEvent, TData, TResponse>, "onResponse">;
+type TResponse<TDispatched extends TDispatchForResponse<any, any, any>> = RequireKey<TMessage<TDispatched['event'], TResponder, Parameters<TDispatched['onResponse']>[0]>, "responseId">;
 
-const Ge: TDispatch<1, { x: number }> = {
+const Ge: TDispatchForResponse<1, { x: number }, number> = {
   communication: 0,
   payload: { x: 3 },
   event: 1,
+  onResponse: (x: number) => { }
 }
 
-const GeResponse: TResponse<TDispatch<1, { x: number },>> = {
+const GeResponse: TResponse<TDispatchForResponse<1, { x: number }, number>> = {
   communication: ECommunicationType.ResponseFromWorker,
   payload: 3,
   event: 1,
@@ -41,7 +42,7 @@ const GeResponse: TResponse<TDispatch<1, { x: number },>> = {
 }
 
 
-export const dispatch = <TData, TResponse = void>(msg: TMessage<TData, TResponse>) => {
+export const dispatch = (msg: TMessage<any, any, any>) => {
   const { communication, event, payload, onResponse, responseId } = msg;
   if (onResponse) {
     const id = registerCallback(msg.event, onResponse);
@@ -50,7 +51,7 @@ export const dispatch = <TData, TResponse = void>(msg: TMessage<TData, TResponse
   }
 
   if (responseId) {
-    postMessage({ communication, event, payload, responseId: id });
+    postMessage({ communication, event, payload, responseId });
   }
 
   postMessage({ communication, event, payload });

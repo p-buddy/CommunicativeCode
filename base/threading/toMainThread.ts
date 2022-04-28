@@ -33,6 +33,8 @@ export const unRegisterCallback = <EventType extends EEvent>(on: EventType, call
   callbacks[on]?.splice(index, 1);
 }
 
+
+
 onmessage = function <TEvent extends EEvent>(e: MessageEvent<TEventBase<TEvent>>) {
   const { type, payload, applicableIndex } = e.data;
   if (callbacks[type] === undefined || callbacks[type]?.length === 0) return;
