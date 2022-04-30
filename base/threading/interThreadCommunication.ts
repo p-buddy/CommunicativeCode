@@ -1,4 +1,4 @@
-const enum ECommunicationType {
+export const enum ECommunicationType {
   MainToWorkerDispatch,
   ResponseFromWorker,
   WorkerToMainDispatch,
@@ -6,55 +6,48 @@ const enum ECommunicationType {
   Last
 }
 
-type RequireKey<T, K extends keyof T> = {
-  [X in Exclude<keyof T, K>]?: T[X]
-} & {
-    [P in K]-?: T[P]
-  }
-
-type TDispatcher = ECommunicationType.MainToWorkerDispatch | ECommunicationType.WorkerToMainDispatch;
-type TResponder = ECommunicationType.ResponseFromMain | ECommunicationType.ResponseFromWorker;
-
-type TMessage<TEvent extends number, TCommunication extends ECommunicationType, TData, TResponseData = void> = {
-  communication: TCommunication,
-  event: TEvent,
-  payload: TData,
-  responseId?: TMessage<TEvent, TCommunication, TData, TResponseData>['communication'] extends TResponder ? number : never,
-  onResponse?: TMessage<TEvent, TCommunication, TData, TResponseData>['communication'] extends TDispatcher ? TResponseData extends void ? void : (resonse: TResponseData) => void : void,
+type TDispatchAndResponse = {
+  [ECommunicationType.MainToWorkerDispatch]: ECommunicationType.ResponseFromWorker,
+  [ECommunicationType.WorkerToMainDispatch]: ECommunicationType.ResponseFromMain
 }
 
-type TDispatch<TEvent extends number, TData, TResponse = void> = TMessage<TEvent, TDispatcher, TData, TResponse>;
-type TDispatchForResponse<TEvent extends number, TData, TResponse> = RequireKey<TDispatch<TEvent, TData, TResponse>, "onResponse">;
-type TResponse<TDispatched extends TDispatchForResponse<any, any, any>> = RequireKey<TMessage<TDispatched['event'], TResponder, Parameters<TDispatched['onResponse']>[0]>, "responseId">;
+export type PayloadType<T> = { payload: T };
+export type ResponseType<T> = { response: T };
 
-const Ge: TDispatchForResponse<1, { x: number }, number> = {
-  communication: 0,
-  payload: { x: 3 },
-  event: 1,
-  onResponse: (x: number) => { }
-}
+type TMessageConfig = PayloadType<any> | (PayloadType<any> & ResponseType<any>);
 
-const GeResponse: TResponse<TDispatchForResponse<1, { x: number }, number>> = {
-  communication: ECommunicationType.ResponseFromWorker,
-  payload: 3,
-  event: 1,
-  responseId: 4,
-}
+export type TMessageStructure = { communication: keyof TDispatchAndResponse } & { [k: number]: TMessageConfig }
+export type TDefineMessageStructure<
+  TCommunication extends keyof TDispatchAndResponse,
+  TEvents extends number,
+  T extends TMessageStructure & { communication: TCommunication } & Record<TEvents, TMessageConfig>
+  > = T;
 
+// [comm-type] [event] [callbacks]
+const callbacks: Function[][][] = new Array(ECommunicationType.Last);
 
-export const dispatch = (msg: TMessage<any, any, any>) => {
-  const { communication, event, payload, onResponse, responseId } = msg;
-  if (onResponse) {
-    const id = registerCallback(msg.event, onResponse);
-    postMessage({ communication, event, payload, responseId: id });
-    return;
+type TConditionalHandler<
+  TStructure extends TMessageStructure,
+  TKey extends keyof TStructure & number>
+  = TStructure[TKey] extends ResponseType<any>
+  ? (payload: TStructure[TKey]['payload']) => TStructure[TKey]['response']
+  : (payload: TStructure[TKey]['payload']) => void;
+
+// commtype
+// event
+// index
+export const handle = <
+  TStructure extends TMessageStructure,
+  TEventKey extends keyof TStructure & number>(
+    communication: TStructure['communication'],
+    event: TEventKey,
+    handler: TConditionalHandler<TStructure, TEventKey>
+  ) => {
+  if (callbacks[communication] !== undefined) {
+
+    callbacks[communication]?.length - 1 < event
   }
-
-  if (responseId) {
-    postMessage({ communication, event, payload, responseId });
-  }
-
-  postMessage({ communication, event, payload });
+  callbacks[communication] ? callbacks[communication]?.push(handler) : callbacks[communication] = [handler];
 }
 
 
