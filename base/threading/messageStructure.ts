@@ -22,3 +22,10 @@ export type DefineMessageStructure<
   TEvents extends number,
   T extends MessageStructureType & { communication: TCommunication } & Record<TEvents, TMessageConfig>
   > = T;
+
+export type TPostedMessage = {
+  communication: Communication,
+  event: number,
+  payload: any,
+  responseID?: number,
+}

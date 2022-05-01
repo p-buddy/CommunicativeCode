@@ -1,5 +1,5 @@
 import { dispatch, getDispatcher } from "./messageDispatching";
-import { DefineMessageStructure, Communication, PayloadType, ResponseType } from "./messageStructure";
+import { DefineMessageStructure, Communication, PayloadType, ResponseType, TPostedMessage } from "./messageStructure";
 
 export const enum EWorkerToMain {
   GetSample,
@@ -25,13 +25,20 @@ dispatch<TWorkerToMain, EWorkerToMain.GetOscillator>(
   { soundID: 4, pitchMod: 4 });
 
 const dispatcher = getDispatcher<TWorkerToMain>(Communication.WorkerToMainDispatch);
-dispatcher.dispatch(EWorkerToMain.Pitch, { soundID: 4, pitchMod: 3 });
 
+dispatcher.dispatch(EWorkerToMain.Pitch, { soundID: 4, pitchMod: 3 });
 dispatcher.dispatch(EWorkerToMain.GetOscillator, 3, (response: number) => {
 
 });
 
+const messageHandler = (event: MessageEvent<TPostedMessage>) {
 
+}
+
+const setOnMessage = () => {
+  if (onmessage) return;
+  onmessage = messageHandler;
+}
 /*handle<TWorkerToMain, EWorkerToMain.GetSample>(
   Communication.WorkerToMainDispatch,
   EWorkerToMain.GetSample,

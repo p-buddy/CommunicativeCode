@@ -1,4 +1,4 @@
-import { MessageStructureType, ResponseType, Communication } from "./messageStructure";
+import { MessageStructureType, ResponseType, Communication, TPostedMessage } from "./messageStructure";
 
 type TOnResponse<
   TStructure extends MessageStructureType,
@@ -16,8 +16,8 @@ export const dispatch = <
     ...onResponse: TOnResponse<TStructure, TEventKey>
   ) => {
   onResponse
-    ? postMessage({ communication, event, payload, responseId: registerCallback(msg.event, onResponse) })
-    : postMessage({ communication, event, payload });
+    ? postMessage({ communication, event, payload, responseID: registerCallback(msg.event, onResponse) } as TPostedMessage)
+    : postMessage({ communication, event, payload } as TPostedMessage);
 }
 
 type TDispatcher<TStructure extends MessageStructureType> = {
