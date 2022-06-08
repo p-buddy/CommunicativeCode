@@ -24,7 +24,7 @@ const bunny = {
 ask(bunny).to("hop"); // to this
 ```
 
-Not convinced that's better? Well, fair enough. After all, it is longer, which we as programmers don't like. (NOTE: It is type-safe though, thanks to the joys of Typescript. Getting that working was very satisfying!)
+Not convinced that's better? Well, fair enough. After all, it is longer, which we as programmers don't like. (NOTE: It is type-safe though, thanks to the joys of Typescript. [Getting that working was very satisfying!](https://github.com/p-buddy/CommunicativeCode/blob/main/base/ask.ts))
 
 But I think this pattern comes alive when we are interacting with many objects. Like below:
 
